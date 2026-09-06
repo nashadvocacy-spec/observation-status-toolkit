@@ -75,6 +75,11 @@ footer{text-align:center;color:rgba(255,255,255,.93);font-size:13px;padding:8px 
 footer a{color:#fff}
 .disclaim{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);margin-top:22px;padding-top:14px;line-height:1.6}
 .hide{display:none}
+.emailbox{border:2px solid var(--line);background:var(--sky);border-radius:12px;padding:20px;margin-top:26px}
+.emailbox b{color:var(--ink);font-size:16px}
+.emailbox p{margin:6px 0 0;font-size:14.5px}
+.emailbox input[type=email]{width:100%;max-width:360px;margin-top:2px;background:#fff}
+.linkout{margin-top:12px;font-size:12.5px;color:var(--muted);word-break:break-all;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px;display:none}
 ol.asks{padding-left:20px}ol.asks li{margin-bottom:9px}
 .step-dots{display:flex;gap:7px;justify-content:center;margin-bottom:4px}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
@@ -230,6 +235,19 @@ ol.asks{padding-left:20px}ol.asks li{margin-bottom:9px}
   <div class="doc" id="script"></div>
   <div class="btn-row no-print" style="margin-top:0">
     <button class="btn-ghost" onclick="copyIt('script',this)">Copy script</button>
+  </div>
+
+  <div class="emailbox no-print">
+    <b>Want this on a computer so you can print it?</b>
+    <p>Send yourself a link that reopens this page with everything you typed already filled in. Open it on a computer, then download the PDF and print it.</p>
+    <label for="myemail" style="margin-top:14px">Your email address</label>
+    <input type="email" id="myemail" placeholder="you@example.com" autocomplete="email">
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn" onclick="openEmail()">Email it to myself</button>
+      <button class="btn-ghost" id="linkBtn" onclick="copyLink(this)">Copy the link instead</button>
+    </div>
+    <div class="linkout" id="linkOut"></div>
+    <p class="hint" style="margin-top:12px">This opens your own email app. The link carries what you typed, and it stays in your email. Nothing is sent to us and nothing is stored on a server.</p>
   </div>
 
   <div class="btn-row no-print">
@@ -1009,6 +1027,111 @@ function downloadPDF() {
   }
 }
 
+
+/* ============================================================
+   Email it to yourself.
+   A static page cannot send mail, so this opens the reader's own
+   email app with a link that reopens this tool with their answers
+   already filled in. The answers ride in the URL fragment, which
+   browsers never send to any server.
+   ============================================================ */
+var SAVE_FIELDS = ['nights','admitdate','pname','dob','hosp','room','doc','mrn','advname','rel','phone','concern'];
+var SAVE_RADIOS = ['where', 'cov', 'path', 'who'];
+
+function b64urlEncode(str) {
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlDecode(str) {
+  var s = String(str).replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  return decodeURIComponent(escape(atob(s)));
+}
+
+function reopenURL() {
+  var o = {};
+  for (var i = 0; i < SAVE_RADIOS.length; i++) o[SAVE_RADIOS[i]] = pick(SAVE_RADIOS[i]);
+  for (var j = 0; j < SAVE_FIELDS.length; j++) {
+    var v = document.getElementById(SAVE_FIELDS[j]).value;
+    if (v) o[SAVE_FIELDS[j]] = v;
+  }
+  var base = location.protocol + '//' + location.host + location.pathname;
+  return base + '#r=' + b64urlEncode(JSON.stringify(o));
+}
+
+function restoreFromHash() {
+  var m = (location.hash || '').match(/^#r=(.+)$/);
+  if (!m) return false;
+  var o;
+  try { o = JSON.parse(b64urlDecode(m[1])); } catch (e) { return false; }
+  for (var i = 0; i < SAVE_RADIOS.length; i++) {
+    var name = SAVE_RADIOS[i];
+    if (!o[name]) continue;
+    var r = document.querySelector('input[name=' + name + '][value=' + o[name] + ']');
+    if (r) r.checked = true;
+  }
+  for (var j = 0; j < SAVE_FIELDS.length; j++) {
+    var el = document.getElementById(SAVE_FIELDS[j]);
+    if (el && o[SAVE_FIELDS[j]]) el.value = o[SAVE_FIELDS[j]];
+  }
+  paint();
+  go();
+  build();
+  return true;
+}
+
+function openEmail() {
+  var url = reopenURL();
+  var who = val('pname') || 'this hospital stay';
+  var to = (document.getElementById('myemail').value || '').trim();
+  var subject = 'Observation status documents for ' + who;
+  var sign =
+    'Nash Patient Advocacy & Consulting\n' +
+    'Rachel Nash, MRC, BCPA\n' +
+    '704-254-1407\n' +
+    'nashadvocacy.com\n\n' +
+    'General education about Medicare hospital status. Not medical, legal, or insurance advice.';
+  var full =
+    'Here is your link back to the Observation Status Challenge Tool, with everything already filled in:\n\n' +
+    url + '\n\n' +
+    'Open it on a computer, scroll to the bottom, and click "Download all three as a PDF." That gives you the letter for the doctor, the list of what to ask for, and the question script, all on your own paper.\n\n' +
+    'If you already saved the PDF on your phone, you can attach it to this email before you send it.\n\n' +
+    sign;
+  var brief = 'Your link back to the Observation Status Challenge Tool:\n\n' + url + '\n\n' +
+    'Open it on a computer and download the PDF to print.\n\n' + sign;
+
+  function mk(body) {
+    return 'mailto:' + encodeURIComponent(to) +
+      '?subject=' + encodeURIComponent(subject) +
+      '&body=' + encodeURIComponent(body);
+  }
+  /* Some mail apps and Windows cut a mailto link off around 2000 characters,
+     so fall back to a shorter note rather than send a truncated one. */
+  var href = mk(full);
+  if (href.length > 1900) href = mk(brief);
+
+  var a = document.createElement('a');
+  a.href = href;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function copyLink(btn) {
+  var url = reopenURL();
+  var out = document.getElementById('linkOut');
+  out.textContent = url;
+  out.style.display = 'block';
+  var label = btn.textContent;
+  var done = function () {
+    btn.textContent = 'Link copied';
+    setTimeout(function () { btn.textContent = label; }, 1800);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done, function () { fallback(url, done); });
+  } else { fallback(url, done); }
+}
+
 function copyIt(id, btn){
   var t = document.getElementById(id).textContent;
   var done = function(){
@@ -1026,6 +1149,9 @@ function fallback(t, done){
   try { document.execCommand('copy'); done(); } catch(e){}
   document.body.removeChild(a);
 }
+
+/* If this page was opened from an emailed link, rebuild everything. */
+try { restoreFromHash(); } catch (e) {}
 </script>
 </body>
 </html>
