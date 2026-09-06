@@ -124,7 +124,7 @@ ol.asks{padding-left:20px}ol.asks li{margin-bottom:9px}
   <label class="choice"><input type="radio" name="cov" value="unk"><b>I am not sure</b><small>That is very common. I will tell you how to find out in the next five minutes.</small></label>
 
   <label>This is the question everything turns on. Which one happened?</label>
-  <p class="hint">Being in a regular hospital room, having tests, and staying several nights does <b>not</b> mean the patient was ever admitted as an inpatient. Only a doctor's inpatient order does that.</p>
+  <p class="hint">Observation is a <b>billing designation</b> the hospital uses to get paid by Medicare. It is not a statement about how sick the patient is. People with fractures, after surgery, and seriously ill have all spent days in a hospital bed under observation. Being in a regular room, having tests, and staying several nights does <b>not</b> mean the patient was ever admitted as an inpatient. Only a doctor's inpatient order does that.</p>
   <label class="choice"><input type="radio" name="path" value="flip" checked><b>Admitted as an inpatient first, then switched to observation</b><small>Someone told you the status was changed, or you got a Medicare Change of Status Notice.</small></label>
   <label class="choice"><input type="radio" name="path" value="obs"><b>Under observation the whole time, never admitted</b><small>You may have received a Medicare Outpatient Observation Notice, called the MOON.</small></label>
   <label class="choice"><input type="radio" name="path" value="unk"><b>I do not know which one</b><small>Most families do not. Step 2 gives you the exact words to ask.</small></label>
@@ -390,6 +390,15 @@ function go(){
 
   var h = '';
 
+  var STAKES =
+    '<h3>What observation status actually costs</h3>' +
+    '<ul>' +
+    '<li><b>Rehab afterward.</b> Original Medicare pays for skilled nursing facility care only after three consecutive days counted as an inpatient. Observation days do not count toward those three, however many of them there are.</li>' +
+    '<li><b>Everyday medications.</b> Under Part B, the drugs the patient normally takes at home are frequently billed to the family rather than covered.</li>' +
+    '<li><b>The entire bill, in one situation worth checking today.</b> Some people have Part A but never enrolled in Part B. If that is the case here and the stay is classified as outpatient, Medicare covers none of it, and the family can be responsible for the whole hospital bill. Look at the card, or call 1-800-MEDICARE and ask. This is the worst case on this page and it is the fastest one to rule out.</li>' +
+    '<li><b>Discharge planning.</b> Outpatients do not have the same discharge planning rights that inpatients have. That changes what the hospital is required to arrange before the patient leaves, which matters most for the people who need the most help getting home.</li>' +
+    '</ul>';
+
   var MOON =
     '<div class="moon">' +
     '<h3>What the MOON actually is</h3>' +
@@ -426,6 +435,7 @@ function go(){
     h += '<li><b>File while the patient is still in the hospital if you possibly can.</b> The right does survive discharge, but everything is easier while the chart is open and the doctor is down the hall.</li>';
     h += '<li><b>If the appeal succeeds,</b> the stay is treated under Part A. That means the inpatient deductible instead of outpatient charges, and those days can count toward the three day requirement for rehab coverage.</li>';
     h += '</ul>';
+    h += STAKES;
     if (S.where === 'out') {
       h += '<div class="note warn"><b>You have already been discharged.</b> You can still request the review. Call the BFCC-QIO for your state, or call 1-800-MEDICARE and ask for the number. Bring the Change of Status Notice, the Medicare Summary Notice, and the hospital bill. Do not wait on this one.</div>';
     }
@@ -442,7 +452,7 @@ function go(){
     h += '<li><b>Ask for the MOON in writing and keep it.</b> The Medicare Outpatient Observation Notice must be given to patients who receive observation services, and it should be explained to you out loud as well as handed to you. Write down who gave it to you and when.</li>';
     h += '<li><b>Loop in Patient Relations or the hospital patient advocate.</b> Every hospital has this office. Ask for the name of the person handling it.</li>';
     h += '</ul>';
-    h += '<div class="note alarm"><b>What is at stake if nothing changes.</b> Under Original Medicare, an observation stay is billed under Part B rather than Part A. Medications the patient normally takes at home are often not covered at all in that situation. And unless the patient has three consecutive inpatient days, Medicare will not pay for skilled nursing facility rehab afterward, however many nights were spent in a hospital bed.</div>';
+    h += STAKES;
     h += MOON;
     if (S.where === 'out') {
       h += '<div class="note warn"><b>You have already been discharged.</b> The status is very unlikely to change now. Shift your effort to the bill: ask the hospital for a fully itemized statement, ask about financial assistance and charity care policy, and check whether any of the charges were coded incorrectly. A patient advocate can help you work that side of it.</div>';
@@ -458,6 +468,7 @@ function go(){
     h += '<li><b>Ask whether you have been given either notice:</b> the Medicare Outpatient Observation Notice, called the MOON, or the Medicare Change of Status Notice, form CMS-10868. Ask for a copy of anything that exists.</li>';
     h += '<li><b>Look at the insurance card.</b> Red, white and blue Medicare card means Original Medicare. A card from a private insurer means Medicare Advantage, and the appeal path runs through the plan.</li>';
     h += '</ol>';
+    h += STAKES;
     h += MOON;
     h += '<div class="note warn">Once you have the answer, come back and change your answer in Step 1. The letter you get will be considerably sharper. In the meantime, the letter below asks the hospital to put the status in writing, which is a reasonable thing to request from anyone.</div>';
   }
@@ -532,6 +543,8 @@ function build(){
   L.push('');
   L.push('I am raising this now, before discharge, because status carries consequences that cannot be undone afterward. Under Original Medicare, observation days are billed under Part B rather than Part A, self administered medications are frequently not covered, and observation days do not count toward the three consecutive inpatient days Medicare generally requires before it will pay for skilled nursing facility care. A patient can spend several nights in a hospital bed and still be told, on the day of discharge, that rehabilitation is not covered.');
   L.push('');
+  L.push('I am asking you to consider whether the care ' + pt + ' is receiving is medically necessary and at an inpatient hospital level of care, and to document that judgment in the record either way.');
+  L.push('');
   L.push('I am not asking anyone to misrepresent the medical record. I am asking that the status accurately reflect the care ' + pt + ' is actually receiving, and that the decision and its reasoning be documented.');
   L.push('');
   L.push('Specifically, I am requesting:');
@@ -603,6 +616,10 @@ function build(){
     items.push(['Request Utilization Review', 'If the physician declines, ask that your request go to the hospital Utilization Review Committee before discharge, in writing. Ask for the name of the person who will receive it.']);
     items.push(['Get the MOON in writing', 'Ask for a copy of the Medicare Outpatient Observation Notice. Write down who handed it to you, and when, and whether anyone explained it out loud.']);
   }
+  if (S.cov !== 'ma') {
+    items.push(['Check whether the patient actually has Part B', 'Look at the Medicare card, or call 1-800-MEDICARE and ask. If the patient has Part A but never enrolled in Part B, an outpatient stay is not covered by Medicare at all and the family can be billed for the whole thing. Rule this out today, it takes one phone call.']);
+  }
+  items.push(['Ask what the hospital is required to arrange before discharge', 'Outpatients do not have the same discharge planning rights as inpatients. Ask the case manager, in those words, what is and is not required for an outpatient, and get the answer written in the chart.']);
   items.push(['Call Patient Relations', 'Every hospital has a patient advocate or patient relations office. Ask for the extension. Get the name of the person handling your concern.']);
   items.push(['Ask about discharge planning now', 'Ask: if rehab is not covered, what is the discharge plan? Ask them to say it out loud before the day of discharge, not on it.']);
   items.push(['Keep every piece of paper', 'Notices, discharge instructions, itemized bills, business cards. Photograph them with your phone as you go, so nothing gets lost.']);
@@ -660,6 +677,10 @@ function build(){
   Q.push('  6. If the answer is yes, would you consider writing an');
   Q.push('     inpatient order?');
   Q.push('');
+  Q.push('     Use these words, they are the ones that matter:');
+  Q.push('     "Is this care medically necessary, and is it at an');
+  Q.push('      inpatient hospital level of care?"');
+  Q.push('');
   if (S.cov === 'ma') {
     Q.push('  7. Would you request a peer to peer review with the plan');
     Q.push('     medical director? When would that happen?');
@@ -691,11 +712,17 @@ function build(){
   Q.push('');
   Q.push('IF YOU GET STUCK, SAY THIS');
   Q.push('');
-  Q.push('  "I would like to speak with the patient advocate, and I would');
-  Q.push('   like my request documented in the chart."');
+  Q.push('  "I would like the status in writing, and I want to appeal the');
+  Q.push('   observation status. This care is medically necessary and it is');
+  Q.push('   at an inpatient hospital level of care. I would also like to');
+  Q.push('   speak with the patient advocate, and I would like this request');
+  Q.push('   documented in the chart."');
   Q.push('');
-  Q.push('  It is a reasonable request, staff hear it as a serious one, and');
-  Q.push('  you do not have to raise your voice to make it.');
+  Q.push('  Those two phrases, medically necessary and inpatient hospital');
+  Q.push('  level of care, are the standard the decision is measured');
+  Q.push('  against. Saying them out loud changes the conversation. It is a');
+  Q.push('  reasonable request, staff hear it as a serious one, and you do');
+  Q.push('  not have to raise your voice to make it.');
   Q.push('');
   Q.push('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -');
   Q.push('If this is more than you want to carry alone, call me.');
