@@ -80,6 +80,10 @@ footer a{color:#fff}
 .emailbox p{margin:6px 0 0;font-size:14.5px}
 .emailbox input[type=email]{width:100%;max-width:360px;margin-top:2px;background:#fff}
 .linkout{margin-top:12px;font-size:12.5px;color:var(--muted);word-break:break-all;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px;display:none}
+.fallback{display:none;margin-top:18px;padding-top:16px;border-top:1px dashed #b9d3e8}
+.fallback b{font-size:15px}
+.moon{border:2px solid var(--line);background:#fbfcfd;border-radius:12px;padding:18px 20px;margin-top:22px}
+.moon h3{margin-top:0}
 ol.asks{padding-left:20px}ol.asks li{margin-bottom:9px}
 .step-dots{display:flex;gap:7px;justify-content:center;margin-bottom:4px}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
@@ -243,11 +247,23 @@ ol.asks{padding-left:20px}ol.asks li{margin-bottom:9px}
     <label for="myemail" style="margin-top:14px">Your email address</label>
     <input type="email" id="myemail" placeholder="you@example.com" autocomplete="email">
     <div class="btn-row" style="margin-top:14px">
-      <button class="btn" onclick="openEmail()">Email it to myself</button>
-      <button class="btn-ghost" id="linkBtn" onclick="copyLink(this)">Copy the link instead</button>
+      <button class="btn" onclick="openEmail('mailto')">Email it to myself</button>
+      <button class="btn-ghost" onclick="showFallback()">My email did not open</button>
     </div>
-    <div class="linkout" id="linkOut"></div>
     <p class="hint" style="margin-top:12px">This opens your own email app. The link carries what you typed, and it stays in your email. Nothing is sent to us and nothing is stored on a server.</p>
+
+    <div class="fallback" id="fallback">
+      <b>Nothing happened when you clicked?</b>
+      <p>That usually means this device has no email app set to open on its own, which is normal if you read mail in a web browser. Any of these will work instead.</p>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn-ghost" onclick="openEmail('gmail')">Open in Gmail</button>
+        <button class="btn-ghost" onclick="openEmail('outlook')">Open in Outlook</button>
+        <button class="btn-ghost" id="msgBtn" onclick="copyMsg(this)">Copy the whole message</button>
+        <button class="btn-ghost" id="linkBtn" onclick="copyLink(this)">Copy just the link</button>
+      </div>
+      <div class="linkout" id="linkOut"></div>
+      <p class="hint" style="margin-top:12px">If you copy, paste it into a new email to yourself, or into a text message. It works the same way.</p>
+    </div>
   </div>
 
   <div class="btn-row no-print">
@@ -374,6 +390,19 @@ function go(){
 
   var h = '';
 
+  var MOON =
+    '<div class="moon">' +
+    '<h3>What the MOON actually is</h3>' +
+    '<p>Almost nobody knows what this form is when it is handed to them, and the name does not help. Here is the plain version.</p>' +
+    '<ul>' +
+    '<li><b>It is a required notice, not a bill and not a contract.</b> The Medicare Outpatient Observation Notice, form CMS-10611, must be given to any Medicare patient who has been getting observation services for more than 24 hours. The hospital has to deliver it no later than 36 hours after observation begins, or at release if that comes sooner. Someone is also required to explain it to you out loud, not just hand you paper. CMS revised the form in April 2026.</li>' +
+    '<li><b>Signing it only means you received it.</b> It is not agreement, and it does not lock anything in. If you refuse to sign, the staff member signs it themselves to record that they gave it to you. Refusing to sign does not change the status either way, so signing costs you nothing.</li>' +
+    '<li><b>What it is telling you</b> is that the patient is an outpatient, not an inpatient. Under Original Medicare that means the stay is billed under Part B instead of Part A, medications the patient normally takes at home are often not covered, and this time does not count toward the three inpatient days Medicare generally requires before it will pay for rehab in a skilled nursing facility.</li>' +
+    '<li><b>What it does not give you is an appeal.</b> There is no way to appeal the MOON itself. What you can do is ask the physician to reconsider the status while the patient is still in the hospital, which is exactly what the letter below does.</li>' +
+    '<li><b>Ask for a copy and write down who gave it to you and when.</b> If the patient has been under observation more than 24 hours and nobody has given you one, ask for it by name. Asking for a form by its number changes how the conversation goes.</li>' +
+    '</ul></div>';
+
+
   /* ---- Medicare Advantage ---- */
   if (S.cov === 'ma') {
     h += '<div class="note"><b>Your plan is the decision maker here, not Medicare directly.</b> With a Medicare Advantage plan, the hospital proposes a status and the plan approves or denies it. That means there is a named human being at the plan who can be asked to look again.</div>';
@@ -390,6 +419,7 @@ function go(){
   else if (S.path === 'flip') {
     h += '<div class="note good"><b>This is the strongest position of the three, and most families do not know it exists.</b> If the patient was admitted as an inpatient and the hospital then changed that status to outpatient observation, there is a real Medicare appeal right, and it is fast.</div>';
     h += '<h3>What applies to you</h3><ul>';
+    h += '<li><b>Do not confuse the two notices.</b> The MOON, form CMS-10611, tells you the patient is an outpatient under observation, and it carries no appeal. The Change of Status Notice, form CMS-10868, is the one that comes with a real appeal right, and it is the one you want here. If you were handed a MOON instead, say that you were admitted as an inpatient first and ask for the Change of Status Notice by name.</li>';
     h += '<li><b>The hospital owes you a written notice.</b> It is called the Medicare Change of Status Notice, form CMS-10868, and the hospital is required to give it to you before discharge. If nobody has handed you one, ask for it by name. That request alone tells the staff you know what you are looking at.</li>';
     h += '<li><b>You have the right to a fast appeal.</b> This right took effect February 14, 2025. The review is done by an outside organization called a Beneficiary and Family Centered Care Quality Improvement Organization, or BFCC-QIO. Depending on the state, that is Acentra Health or Commence Health. The contact information is on the notice.</li>';
     h += '<li><b>The decision comes back quickly,</b> generally about two days after you file.</li>';
@@ -413,6 +443,7 @@ function go(){
     h += '<li><b>Loop in Patient Relations or the hospital patient advocate.</b> Every hospital has this office. Ask for the name of the person handling it.</li>';
     h += '</ul>';
     h += '<div class="note alarm"><b>What is at stake if nothing changes.</b> Under Original Medicare, an observation stay is billed under Part B rather than Part A. Medications the patient normally takes at home are often not covered at all in that situation. And unless the patient has three consecutive inpatient days, Medicare will not pay for skilled nursing facility rehab afterward, however many nights were spent in a hospital bed.</div>';
+    h += MOON;
     if (S.where === 'out') {
       h += '<div class="note warn"><b>You have already been discharged.</b> The status is very unlikely to change now. Shift your effort to the bill: ask the hospital for a fully itemized statement, ask about financial assistance and charity care policy, and check whether any of the charges were coded incorrectly. A patient advocate can help you work that side of it.</div>';
     }
@@ -427,6 +458,7 @@ function go(){
     h += '<li><b>Ask whether you have been given either notice:</b> the Medicare Outpatient Observation Notice, called the MOON, or the Medicare Change of Status Notice, form CMS-10868. Ask for a copy of anything that exists.</li>';
     h += '<li><b>Look at the insurance card.</b> Red, white and blue Medicare card means Original Medicare. A card from a private insurer means Medicare Advantage, and the appeal path runs through the plan.</li>';
     h += '</ol>';
+    h += MOON;
     h += '<div class="note warn">Once you have the answer, come back and change your answer in Step 1. The letter you get will be considerably sharper. In the meantime, the letter below asks the hospital to put the status in writing, which is a reasonable thing to request from anyone.</div>';
   }
 
@@ -845,7 +877,10 @@ function safeFileName(s) {
 function rightsPlain() {
   var out = [], box = document.getElementById('rights');
   if (!box) return out;
-  var kids = box.children, n = 1;
+  walkRights(box.children, out);
+  return out;
+}
+function walkRights(kids, out) {
   for (var i = 0; i < kids.length; i++) {
     var el = kids[i], tag = el.tagName.toLowerCase();
     if (tag === 'h3') { out.push({ t: 'h', s: el.textContent.trim() }); }
@@ -855,12 +890,13 @@ function rightsPlain() {
     } else if (tag === 'ol') {
       var ols = el.getElementsByTagName('li');
       for (var k = 0; k < ols.length; k++) out.push({ t: 'n', s: (k + 1) + '. ' + ols[k].textContent.trim() });
+    } else if (el.className && ('' + el.className).indexOf('moon') >= 0) {
+      walkRights(el.children, out);
     } else {
       var s = el.textContent.trim();
       if (s) out.push({ t: 'p', s: s });
     }
   }
-  return out;
 }
 function clockPlain() {
   var b = document.getElementById('clockbox');
@@ -1079,10 +1115,9 @@ function restoreFromHash() {
   return true;
 }
 
-function openEmail() {
+function emailParts() {
   var url = reopenURL();
   var who = val('pname') || 'this hospital stay';
-  var to = (document.getElementById('myemail').value || '').trim();
   var subject = 'Observation status documents for ' + who;
   var sign =
     'Nash Patient Advocacy & Consulting\n' +
@@ -1098,23 +1133,59 @@ function openEmail() {
     sign;
   var brief = 'Your link back to the Observation Status Challenge Tool:\n\n' + url + '\n\n' +
     'Open it on a computer and download the PDF to print.\n\n' + sign;
+  return { url: url, subject: subject, full: full, brief: brief };
+}
 
+function showFallback() {
+  var f = document.getElementById('fallback');
+  f.style.display = 'block';
+  f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* how can be 'mailto', 'gmail' or 'outlook' */
+function openEmail(how) {
+  var p = emailParts();
+  var to = (document.getElementById('myemail').value || '').trim();
+
+  if (how === 'gmail') {
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&tf=1' +
+      '&to=' + encodeURIComponent(to) +
+      '&su=' + encodeURIComponent(p.subject) +
+      '&body=' + encodeURIComponent(p.full), '_blank', 'noopener');
+    return;
+  }
+  if (how === 'outlook') {
+    window.open('https://outlook.live.com/mail/0/deeplink/compose?' +
+      'to=' + encodeURIComponent(to) +
+      '&subject=' + encodeURIComponent(p.subject) +
+      '&body=' + encodeURIComponent(p.full), '_blank', 'noopener');
+    return;
+  }
+
+  /* Default: hand it to whatever mail app this device has. Some devices have
+     none, and then nothing visible happens, so reveal the other ways too. */
   function mk(body) {
     return 'mailto:' + encodeURIComponent(to) +
-      '?subject=' + encodeURIComponent(subject) +
+      '?subject=' + encodeURIComponent(p.subject) +
       '&body=' + encodeURIComponent(body);
   }
-  /* Some mail apps and Windows cut a mailto link off around 2000 characters,
-     so fall back to a shorter note rather than send a truncated one. */
-  var href = mk(full);
-  if (href.length > 1900) href = mk(brief);
+  var href = mk(p.full);
+  if (href.length > 1900) href = mk(p.brief);
+  try { window.location.href = href; } catch (e) {}
+  setTimeout(showFallback, 900);
+}
 
-  var a = document.createElement('a');
-  a.href = href;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+function copyMsg(btn) {
+  var p = emailParts();
+  var text = 'Subject: ' + p.subject + '\n\n' + p.full;
+  var label = btn.textContent;
+  var done = function () {
+    btn.textContent = 'Message copied';
+    setTimeout(function () { btn.textContent = label; }, 1800);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+  } else { fallback(text, done); }
 }
 
 function copyLink(btn) {
